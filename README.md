@@ -1,2 +1,2 @@
 # CovidVaxFinderPA
-pFind vaccine appointments at the City of Allentown site.
+Find vaccine appointments at the City of Allentown site.
