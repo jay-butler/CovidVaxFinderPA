@@ -14,7 +14,7 @@ Function Get-AllentownAppt
 .PARAMETER SilentMode
 	Specify this to suppress the audible alerts.
 .EXAMPLE
-	Invoke-ExDbaAzDataFileBlobStorageConfiguration -TargetSQLInstances 'sspc1dbd-001,51818' -Environment AzureCloud;
+	Get-AllentownAppt -CycleSeconds 45 -LogFilePath C:\Temp;
 #>
 
 [cmdletbinding()]
