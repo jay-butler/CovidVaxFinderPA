@@ -60,12 +60,17 @@ Function Get-AllentownAppt
 			$page = Invoke-WebRequest -Uri $PageURL -SessionVariable ACF_sess;
 			$Links = $page.Links | Where-Object {$_.Class -like 'entry calendar-entry-link calendar-entry-link-offering*'};
 
+			# This is some older code used to detect appointents. The regex expression above and evaluation
+			# below replaced this. But, the page does chaneg from time to time, so maybe these conditions 
+			# will be needed again.
+			<#
 			# If this string is missing, there are appointments
-			#$NoApptMsg = $page.Content.IndexOf(' There are no openings available for this offering <em>(623)</em>.');
-			#if ($NoApptMsg -le 0) {$NoApptMsg = $page.Content.IndexOf('<span class="BDHerrorinfo">We are sorry but the clinic you have chosen is full.</span>');}
-			##	if ($NoApptMsg -le 0) {$NoApptMsg = $page.Content.IndexOf('<span class="BDHerroremphasis">Error:</span>');}
-			#if ($NoApptMsg -le 0) {$NoApptMsg = $page.Content.IndexOf('Sorry but there are no dates available at this time');}
-			#$ApptMsg = $page.Content.IndexOf('M»&nbsp;1st Dose of Covid Vaccine');
+			$NoApptMsg = $page.Content.IndexOf(' There are no openings available for this offering <em>(623)</em>.');
+			if ($NoApptMsg -le 0) {$NoApptMsg = $page.Content.IndexOf('<span class="BDHerrorinfo">We are sorry but the clinic you have chosen is full.</span>');}
+			if ($NoApptMsg -le 0) {$NoApptMsg = $page.Content.IndexOf('<span class="BDHerroremphasis">Error:</span>');}
+			if ($NoApptMsg -le 0) {$NoApptMsg = $page.Content.IndexOf('Sorry but there are no dates available at this time');}
+			$ApptMsg = $page.Content.IndexOf('M»&nbsp;1st Dose of Covid Vaccine');
+			#>
 
 			# Look for the link that schedules the appointments
 			if ($Links)
