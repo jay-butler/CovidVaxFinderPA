@@ -22,7 +22,7 @@ Function Get-AllentownAppt
 	PARAM
 	(
 	[Parameter(Mandatory=$false)]
-	[ValidateRange(30,3600)]
+	[ValidateRange(1,3600)]
 		[int]$CycleSeconds = 30,
 	[Parameter(Mandatory=$false)]
 	[ValidateScript({Test-Path $_ -PathType ‘Container’})] 
@@ -39,7 +39,17 @@ Function Get-AllentownAppt
 			{$LogFilePath += '\';}
 
 		[string]$OutFile = ('{0}AllentownAppts_{1}.txt' -f $LogFilePath, (((Get-Date -Format s) -replace 'T','_') -replace ':','-'))
-		Write-Host ('Log file: {0}' -f $OutFile );
+		Write-Host ('Log file: {0}' -f $OutFile ) -ForegroundColor White -BackgroundCOlor DarkBlue;
+
+		# Sounds only work in Windows. For Windows PowerShell, $PSVersionTable has no property
+		# named Platform. For PowerShell Core, Platform is set to 'Unix' for both macOS and 
+		#Linux and to 'Windows' for Windows.
+		if ($PSVersionTable.Platform -eq 'Unix')
+			{
+			$SilentMode = $true;
+			}
+
+		[int]$PriorApptCount = 0;
 	}
 
 	PROCESS
@@ -60,7 +70,7 @@ Function Get-AllentownAppt
 			$page = Invoke-WebRequest -Uri $PageURL -SessionVariable ACF_sess;
 			$Links = $page.Links | Where-Object {$_.Class -like 'entry calendar-entry-link calendar-entry-link-offering*'};
 
-			# This is some older code used to detect appointents. The regex expression above and evaluation
+			# This is some older code used to detect appointments. The regex expression above and evaluation
 			# below replaced this. But, the page does chaneg from time to time, so maybe these conditions 
 			# will be needed again.
 			<#
@@ -77,15 +87,8 @@ Function Get-AllentownAppt
 			{
 				# Regex search to find the appointment numbers for every day there are appointments...
 				$AllAppts = $match.Matches($page.Content);
-				$AppCount = ($AllAppts | ForEach-Object {$_.Groups | Where-Object {$_.Name -eq 'ApptCount'}}).Value;
-				$AppSum = $AppCount | Measure-object -Sum;
-
-				[string]$message = ('***** {0:N0} appointment(s) on {1:N0} days in Allentown ({2})' -f $AppSum.Sum, $AppSum.Count, ([string[]]$AppCount -join ', ') );
-				$MsgColor = 'Green';
-
-				# if( $page.Content -match '(?<NbrAppts>\d?[,]?\d+)( appointment[s]? remaining)')
-				# 	{ $NbrAppts = [int]$Matches.NbrAppts; }
-				# [string]$message = ('{0}	***** {1:N0} appointment(s) in Allentown available' -f ((Get-Date -Format s) -replace 'T', ' '),$NbrAppts );
+				$ApptCount = ($AllAppts | ForEach-Object {$_.Groups | Where-Object {$_.Name -eq 'ApptCount'}}).Value;
+				$ApptSum = $ApptCount | Measure-object -Sum;
 
 				if (-not $WindowOpen)
 				{
@@ -96,13 +99,25 @@ Function Get-AllentownAppt
 						# Play an audible alert
 						for ($i=0; $i -lt 2; $i++) {[console]::beep(550,220)};
 						# Chirp a few times if there are a lot of appointments
-						for ($i=0; $i -lt ($AppSum.Sum / 50); $i++) {[console]::beep(750,120)};
+						for ($i=0; $i -lt ($ApptSum.Sum / 50); $i++) {[console]::beep(750,120)};
 						} #end IF silent
+
+					[string]$message = ('{0}	------> Appointment availability window is open.' -f ((Get-Date -Format s) -replace 'T', ' '));
+					Write-Host $message  -ForegroundColor White -BackgroundColor DarkGreen;
+	
 					# Then, remember some stuff
 					[boolean]$WindowOpen = $true;
 					[datetime]$WindowStart = Get-Date;
 				} # End Nested If window open/closed
 
+				[string]$message = ('***** {0:N0} appointment(s) on {1:N0} days in Allentown ({2})' -f $ApptSum.Sum, $ApptSum.Count, ([string[]]$ApptCount -join ', ') );
+				[string]$MsgColor = Switch ($true)
+					{
+					($ApptCount -eq $PriorApptCount ) {'Cyan'}
+					($ApptCount -lt $PriorApptCount ) {'Magenta'}
+					($ApptCount -gt $PriorApptCount ) {'Green'}
+					};
+				$PriorApptCount = $ApptCount;
 			} # End If appointments present
 			else
 			{
@@ -113,12 +128,13 @@ Function Get-AllentownAppt
 						[console]::beep(900,750);
 						} #End IF silent
 					[boolean]$WindowOpen = $false;
-					[string]$message = ('{0}	------> Window duration was {1:N2} seconds.' -f ((Get-Date -Format s) -replace 'T', ' '), $((New-Timespan -Start $WindowStart).TotalSeconds));
-					Write-Host $message  -ForegroundColor White -BackgroundColor DarkBlue;
+					[string]$message = ('{0}	------> Availability window duration was {1:N2} seconds.' -f ((Get-Date -Format s) -replace 'T', ' '), $((New-Timespan -Start $WindowStart).TotalSeconds));
+					Write-Host $message  -ForegroundColor White -BackgroundColor DarkRed;
 					Add-Content -Path $OutFile -Value $message;
+					$PriorApptCount = 0;
 				} # End Nested If
 				[string]$message = ('No appointments in Allentown');
-				$MsgColor = 'Yellow';
+				[string]$MsgColor = 'Yellow';
 			} # End Else
 
 			Add-Content -Path $OutFile -Value $message;
@@ -136,4 +152,4 @@ Function Get-AllentownAppt
 
 } # End FUNCTION
 
-Get-AllentownAppt -CycleSeconds 30;
+Get-AllentownAppt -CycleSeconds 10;
