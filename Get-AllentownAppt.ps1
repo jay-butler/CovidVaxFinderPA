@@ -4,11 +4,11 @@ Function Get-AllentownAppt
 .SYNOPSIS
 	Loads the Allenttown PA vaccine site's appointment page periodically. If there is an appointment available, the page will be loaded in a browser and there is an optional audbible alert. Audio does not work in PowerShell Core.
 .DESCRIPTION
-	The appoinment page displays the days on which there are available appointments. Clicking one of these links goes to a page to select a time. Once a time is selected, there is a form with name, address, date of birth, etc. that must be completed and submitted. To speed the form filling, use your password manager's or your browser's functionality. 
+	The appoinment page displays the days on which there are available appointments. Clicking one of these links goes to a page to select a time. Once a time is selected, there is a form with name, address, date of birth, etc. that must be completed and submitted. To speed the form filling, use your password manager's or your browser's functionality.
 .NOTES
 	Author: Jay Butler.
 .PARAMETER CycleSeconds
-	Number of seconds between page reloads. Set this number low enough to find the appointment availability quickly, but not so low that the script continually reloads the website. 
+	Number of seconds between page reloads. Set this number low enough to find the appointment availability quickly, but not so low that the script continually reloads the website.
 .PARAMETER LogFilePath
 	The results will be written to a file. Specify a folder for the log file if you want to place it anywhere other than the default of a folder named "CovidVaxFinder" within your home folder.
 .PARAMETER SilentMode
@@ -25,7 +25,7 @@ Function Get-AllentownAppt
 	[ValidateRange(1,3600)]
 		[int]$CycleSeconds = 30,
 	[Parameter(Mandatory=$false)]
-	[ValidateScript({Test-Path $_ -PathType ‘Container’})] 
+	[ValidateScript({Test-Path $_ -PathType ‘Container’})]
 		[string]$LogFilePath = ('{0}\CovidVaxFinder\' -f $Home),
 	[Parameter(Mandatory=$false)]
 		[switch]$SilentMode = $false
@@ -35,14 +35,14 @@ Function Get-AllentownAppt
 	{
 		$PSBoundParameters.GetEnumerator() | ForEach-Object { Write-Verbose $_ };
 
-		if ($LogFilePath[-1] -ne '\') 
+		if ($LogFilePath[-1] -ne '\')
 			{$LogFilePath += '\';}
 
 		[string]$OutFile = ('{0}AllentownAppts_{1}.txt' -f $LogFilePath, (((Get-Date -Format s) -replace 'T','_') -replace ':','-'))
 		Write-Host ('Log file: {0}' -f $OutFile ) -ForegroundColor White -BackgroundCOlor DarkBlue;
 
 		# Sounds only work in Windows. For Windows PowerShell, $PSVersionTable has no property
-		# named Platform. For PowerShell Core, Platform is set to 'Unix' for both macOS and 
+		# named Platform. For PowerShell Core, Platform is set to 'Unix' for both macOS and
 		#Linux and to 'Windows' for Windows.
 		if ($PSVersionTable.Platform -eq 'Unix')
 			{
@@ -71,7 +71,7 @@ Function Get-AllentownAppt
 			$Links = $page.Links | Where-Object {$_.Class -like 'entry calendar-entry-link calendar-entry-link-offering*'};
 
 			# This is some older code used to detect appointments. The regex expression above and evaluation
-			# below replaced this. But, the page does chaneg from time to time, so maybe these conditions 
+			# below replaced this. But, the page does chaneg from time to time, so maybe these conditions
 			# will be needed again.
 			<#
 			# If this string is missing, there are appointments
@@ -104,7 +104,7 @@ Function Get-AllentownAppt
 
 					[string]$message = ('{0}	------> Appointment availability window is open.' -f ((Get-Date -Format s) -replace 'T', ' '));
 					Write-Host $message  -ForegroundColor White -BackgroundColor DarkGreen;
-	
+
 					# Then, remember some stuff
 					[boolean]$WindowOpen = $true;
 					[datetime]$WindowStart = Get-Date;
@@ -113,11 +113,11 @@ Function Get-AllentownAppt
 				[string]$message = ('***** {0:N0} appointment(s) on {1:N0} days in Allentown ({2})' -f $ApptSum.Sum, $ApptSum.Count, ([string[]]$ApptCount -join ', ') );
 				[string]$MsgColor = Switch ($true)
 					{
-					($ApptCount -eq $PriorApptCount ) {'Cyan'}
-					($ApptCount -lt $PriorApptCount ) {'Magenta'}
-					($ApptCount -gt $PriorApptCount ) {'Green'}
+					($ApptSum.Sum -eq $PriorApptCount ) {'Cyan'}
+					($ApptSum.Sum -lt $PriorApptCount ) {'Magenta'}
+					($ApptSum.Sum -gt $PriorApptCount ) {'Green'}
 					};
-				$PriorApptCount = $ApptCount;
+				$PriorApptCount = $ApptSum.Sum;
 			} # End If appointments present
 			else
 			{
@@ -152,4 +152,4 @@ Function Get-AllentownAppt
 
 } # End FUNCTION
 
-Get-AllentownAppt -CycleSeconds 10;
+Get-AllentownAppt -CycleSeconds 60;
