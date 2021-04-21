@@ -137,7 +137,7 @@ Function Get-AllentownAppt
 				[string]$MsgColor = 'Yellow';
 			} # End Else
 
-			Add-Content -Path $OutFile -Value $message;
+			Add-Content -Path $OutFile -Value (('{0}	' -f ((Get-Date -Format s) -replace 'T', ' ')) + $message);
 			Write-Host ('{0}	' -f ((Get-Date -Format s) -replace 'T', ' ')) -ForegroundColor White -NoNewline;
 			Write-Host $message -ForegroundColor $MsgColor;
 
